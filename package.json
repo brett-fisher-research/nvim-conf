@@ -1,0 +1,11 @@
+{
+  "name": "nvim-conf",
+  "private": true,
+  "scripts": {
+    "setup": "node setup.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/brett-fisher-research/nvim-conf.git"
+  }
+}
