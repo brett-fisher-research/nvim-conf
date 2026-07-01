@@ -9,7 +9,7 @@ My [Neovim](https://neovim.io/) configuration, kept in its own repo so it's easy
 | [tokyonight.nvim](https://github.com/folke/tokyonight.nvim) | Colorscheme |
 | [nvim-tree.lua](https://github.com/nvim-tree/nvim-tree.lua) | File explorer (right side, follows the current file) |
 | [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) | Fuzzy finding and live grep |
-| [diffview.nvim](https://github.com/sindrets/diffview.nvim) | Diff review UI |
+| [octo.nvim](https://github.com/pwntester/octo.nvim) | GitHub PR review — API-only, never touches the local checkout |
 
 Plugins are managed by [lazy.nvim](https://github.com/folke/lazy.nvim) (bootstrapped automatically; the update checker is disabled). Syntax highlighting uses Neovim's built-in treesitter — no treesitter plugin.
 
@@ -25,10 +25,16 @@ Leader is `Space`.
 | `<leader>fs` | Live grep in cwd |
 | `<leader>fc` | Grep string under cursor |
 | `Ctrl+k` / `Ctrl+j` | Move up/down in telescope results (insert mode) |
+| `<leader>pl` | List the repo's open PRs (Enter opens one) |
+| `<leader>pd` | Diff the open PR |
+| `<leader>po` | Open a PR by number |
+| `<leader>pc` | PR checks (CI status) |
+| `<leader>pb` | Open the PR in the browser |
+| `<leader>h` | Floating cheatsheet of all of the above |
 
-### `:PR <num>` — review a pull request
+### Reviewing pull requests
 
-`:PR 42` checks out PR 42 with `gh pr checkout` and opens a Diffview of the whole PR against the repo's default branch (`:DiffviewOpen origin/main...HEAD`). Requires the [GitHub CLI](https://cli.github.com/) authenticated for the repo.
+PR review runs on [octo.nvim](https://github.com/pwntester/octo.nvim): everything is fetched from the GitHub API into scratch buffers, so viewing a PR never checks out a branch or touches the working tree — review as many PRs across as many repos as you like with zero local state. Requires the [GitHub CLI](https://cli.github.com/) authenticated (`gh auth login`). Start from `<leader>pl` in any repo.
 
 ## Setup on a new machine
 
