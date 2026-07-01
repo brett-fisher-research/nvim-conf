@@ -48,20 +48,43 @@ vim.api.nvim_create_autocmd("FileType", {
   end,
 })
 
--- :PR <num> — check out a GitHub PR and review it as a diff against the
--- repo's default branch.
-vim.api.nvim_create_user_command("PR", function(opts)
-  local num = opts.args
-  local out = vim.fn.system({ "gh", "pr", "checkout", num })
-  if vim.v.shell_error ~= 0 then
-    vim.notify("gh pr checkout " .. num .. " failed:\n" .. out, vim.log.levels.ERROR)
-    return
+-- <leader>h — floating cheatsheet of this config's commands.
+local cheatsheet = {
+  "  Files",
+  "   <Space>e     toggle file tree   (in tree: I gitignored, H dotfiles)",
+  "   <Space>ff    find files",
+  "   <Space>fr    recent files",
+  "   <Space>fs    grep in cwd",
+  "   <Space>fc    grep word under cursor",
+  "",
+  "  Pull requests (octo — API only, never touches your checkout)",
+  "   <Space>pl    list ALL my open PRs, every repo (Enter opens one)",
+  "   <Space>pd    diff the open PR",
+  "   <Space>po    open PR by number",
+  "   <Space>pc    PR checks (CI)",
+  "   <Space>pb    open PR in browser",
+  "",
+  "  Misc",
+  "   <Space>h     this cheatsheet (q or Esc closes)",
+  "   :Lazy update update plugins (never automatic)",
+}
+vim.keymap.set("n", "<leader>h", function()
+  local buf = vim.api.nvim_create_buf(false, true)
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, cheatsheet)
+  vim.bo[buf].modifiable = false
+  local width = 0
+  for _, l in ipairs(cheatsheet) do width = math.max(width, #l) end
+  local win = vim.api.nvim_open_win(buf, true, {
+    relative = "editor",
+    width = width + 2,
+    height = #cheatsheet,
+    row = math.floor((vim.o.lines - #cheatsheet) / 2),
+    col = math.floor((vim.o.columns - width) / 2),
+    style = "minimal",
+    border = "rounded",
+    title = " Cheatsheet ",
+  })
+  for _, key in ipairs({ "q", "<Esc>" }) do
+    vim.keymap.set("n", key, function() vim.api.nvim_win_close(win, true) end, { buffer = buf })
   end
-  local default = vim.trim(vim.fn.system({
-    "gh", "repo", "view", "--json", "defaultBranchRef", "-q", ".defaultBranchRef.name",
-  }))
-  if vim.v.shell_error ~= 0 or default == "" then
-    default = "main"
-  end
-  vim.cmd("DiffviewOpen origin/" .. default .. "...HEAD")
-end, { nargs = 1, desc = "Check out PR <num> and diff it against the default branch" })
+end, { desc = "Show keymap cheatsheet" })
