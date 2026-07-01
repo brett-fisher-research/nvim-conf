@@ -58,7 +58,7 @@ local cheatsheet = {
   "   <Space>fc    grep word under cursor",
   "",
   "  Pull requests (octo — API only, never touches your checkout)",
-  "   <Space>pl    list open PRs (Enter opens one)",
+  "   <Space>pl    list ALL my open PRs, every repo (Enter opens one)",
   "   <Space>pd    diff the open PR",
   "   <Space>po    open PR by number",
   "   <Space>pc    PR checks (CI)",

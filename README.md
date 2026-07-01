@@ -25,7 +25,7 @@ Leader is `Space`.
 | `<leader>fs` | Live grep in cwd |
 | `<leader>fc` | Grep string under cursor |
 | `Ctrl+k` / `Ctrl+j` | Move up/down in telescope results (insert mode) |
-| `<leader>pl` | List the repo's open PRs (Enter opens one) |
+| `<leader>pl` | List ALL open PRs across the account's repos (Enter opens one) |
 | `<leader>pd` | Diff the open PR |
 | `<leader>po` | Open a PR by number |
 | `<leader>pc` | PR checks (CI status) |
