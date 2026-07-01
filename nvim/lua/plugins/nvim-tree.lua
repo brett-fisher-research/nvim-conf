@@ -3,6 +3,10 @@ return {
   dependencies = { "nvim-tree/nvim-web-devicons" },
   config = function()
     require("nvim-tree").setup({
+      -- Workspaces like brot-os gitignore whole tenant dirs; the tree must still show them
+      filters = {
+        git_ignored = false,
+      },
       view = {
         side = "right",
         width = 50,
