@@ -29,7 +29,6 @@ Leader is `Space`.
 | `<leader>pd` | Diff the open PR |
 | `<leader>po` | Open a PR by number |
 | `<leader>pc` | PR checks (CI status) |
-| `<leader>pb` | Open the PR in the browser |
 | `<leader>h` | Floating cheatsheet of all of the above |
 
 ### Reviewing pull requests
