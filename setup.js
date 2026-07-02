@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Idempotent Neovim config setup. Safe to run repeatedly.
-// Copies nvim/ to the config directory Neovim reads on this platform.
+// Replaces the config directory Neovim reads on this platform with nvim/.
 
 'use strict';
 
@@ -24,8 +24,11 @@ function configDir() {
 }
 
 const DEST = configDir();
-fs.cpSync(SRC, DEST, { recursive: true, force: true });
-log(`Copied nvim/ -> ${DEST}`);
+// Clean replace: a plain overlay copy leaves stale files from any pre-existing
+// config in place, and lazy.nvim loads everything under lua/plugins/.
+fs.rmSync(DEST, { recursive: true, force: true });
+fs.cpSync(SRC, DEST, { recursive: true });
+log(`Replaced ${DEST} with nvim/`);
 
 try {
   execSync(process.platform === 'win32' ? 'where nvim' : 'command -v nvim', { stdio: 'ignore' });
