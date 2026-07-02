@@ -3,6 +3,9 @@ vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 
 -- Options
+-- wezterm's Git Bash leaks $SHELL into nvim while shellcmdflag stays cmd-style
+-- `/s /c`, breaking every :! (exit 127); pin cmd.exe for consistent Windows defaults.
+vim.o.shell = "cmd.exe"
 vim.opt.number = true
 vim.opt.ignorecase = true
 vim.opt.smartcase = true
