@@ -71,6 +71,7 @@ local cheatsheet = {
   "   <Space>pb    open PR in browser",
   "",
   "  Misc",
+  "   <Space>mp    toggle markdown preview (current buffer)",
   "   <Space>h     this cheatsheet (q or Esc closes)",
   "   :Lazy update update plugins (never automatic)",
 }
