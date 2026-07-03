@@ -1,6 +1,6 @@
 # nvim-conf
 
-My [Neovim](https://neovim.io/) configuration, kept in its own repo so it's easy to set up on any machine — Windows, Linux, or macOS. Minimal and view-first: 4 plugins, core treesitter highlighting, no LSP, no autocomplete, no update nags.
+My [Neovim](https://neovim.io/) configuration, kept in its own repo so it's easy to set up on any machine — Windows, Linux, or macOS. Minimal and view-first: 5 plugins, core treesitter highlighting, no LSP, no autocomplete, no update nags.
 
 ## What's in the config
 
@@ -10,6 +10,7 @@ My [Neovim](https://neovim.io/) configuration, kept in its own repo so it's easy
 | [nvim-tree.lua](https://github.com/nvim-tree/nvim-tree.lua) | File explorer (right side, follows the current file) |
 | [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim) | Fuzzy finding and live grep |
 | [octo.nvim](https://github.com/pwntester/octo.nvim) | GitHub PR review — API-only, never touches the local checkout |
+| [render-markdown.nvim](https://github.com/MeanderingProgrammer/render-markdown.nvim) | In-buffer markdown preview, toggleable per buffer |
 
 Plugins are managed by [lazy.nvim](https://github.com/folke/lazy.nvim) (bootstrapped automatically; the update checker is disabled). Syntax highlighting uses Neovim's built-in treesitter — no treesitter plugin.
 
@@ -29,6 +30,7 @@ Leader is `Space`.
 | `<leader>pd` | Diff the open PR |
 | `<leader>po` | Open a PR by number |
 | `<leader>pc` | PR checks (CI status) |
+| `<leader>mp` | Toggle markdown preview in the current buffer |
 | `<leader>h` | Floating cheatsheet of all of the above |
 
 ### Reviewing pull requests
