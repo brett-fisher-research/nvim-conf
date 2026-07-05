@@ -10,6 +10,8 @@ if vim.fn.has("win32") == 1 then
   vim.o.shell = "cmd.exe"
 end
 vim.opt.number = true
+vim.opt.linebreak = true
+vim.opt.breakindent = true
 vim.opt.ignorecase = true
 vim.opt.smartcase = true
 vim.opt.tabstop = 4
