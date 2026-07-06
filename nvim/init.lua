@@ -73,6 +73,7 @@ local cheatsheet = {
   "   <Space>pb    open PR in browser",
   "",
   "  Misc",
+  "   Ctrl+hjkl    navigate splits/panes (nvim <-> tmux)",
   "   <Space>mp    toggle markdown preview (current buffer)",
   "   <Space>h     this cheatsheet (q or Esc closes)",
   "   :Lazy update update plugins (never automatic)",
