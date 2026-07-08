@@ -72,12 +72,22 @@ local cheatsheet = {
   "   <Space>pc    PR checks (CI)",
   "   <Space>pb    open PR in browser",
   "",
+  "  Windows",
+  "   <Space>sv    split vertically",
+  "   <Space>sh    split horizontally",
+  "   <Space>sx    close split",
+  "",
   "  Misc",
   "   Ctrl+hjkl    navigate splits/panes (nvim <-> tmux)",
   "   <Space>mp    toggle markdown preview (current buffer)",
   "   <Space>h     this cheatsheet (q or Esc closes)",
   "   :Lazy update update plugins (never automatic)",
 }
+-- Native window splits (no plugin). splitright/splitbelow set above.
+vim.keymap.set("n", "<leader>sv", vim.cmd.vsplit, { desc = "Split window vertically" })
+vim.keymap.set("n", "<leader>sh", vim.cmd.split, { desc = "Split window horizontally" })
+vim.keymap.set("n", "<leader>sx", vim.cmd.close, { desc = "Close split" })
+
 vim.keymap.set("n", "<leader>h", function()
   local buf = vim.api.nvim_create_buf(false, true)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, cheatsheet)
