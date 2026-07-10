@@ -78,6 +78,7 @@ local cheatsheet = {
   "   <Space>gs    changed files (status)",
   "   <Space>gp    preview hunk diff",
   "   <Space>gd    full diff view",
+  "   <Space>gq    close diff view",
   "",
   "  Windows",
   "   <Space>sv    split vertically",

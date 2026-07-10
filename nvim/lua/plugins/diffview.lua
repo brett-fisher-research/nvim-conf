@@ -6,5 +6,6 @@ return {
 
     local keymap = vim.keymap
     keymap.set("n", "<leader>gd", "<cmd>DiffviewOpen<cr>", { desc = "Full diff view" })
+    keymap.set("n", "<leader>gq", "<cmd>DiffviewClose<cr>", { desc = "close diff view" })
   end,
 }
