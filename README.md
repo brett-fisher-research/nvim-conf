@@ -45,6 +45,7 @@ PR review runs on [octo.nvim](https://github.com/pwntester/octo.nvim): everythin
 - [git](https://git-scm.com/) — lazy.nvim clones plugins with it
 - [Node.js](https://nodejs.org/) — only used to run the setup script
 - [GitHub CLI](https://cli.github.com/) — only needed for the `:PR` flow
+- Linux only: a clipboard provider — `xclip` or `xsel` on X11, `wl-clipboard` on Wayland. Yanks use the system clipboard (`clipboard=unnamedplus`); Windows and macOS need nothing extra.
 
 ### 2. Clone and run setup
 
