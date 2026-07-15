@@ -86,6 +86,12 @@ local cheatsheet = {
   "   <Space>sh    split horizontally",
   "   <Space>sx    close split",
   "",
+  "  Tabs",
+  "   <Space>to    open new tab",
+  "   <Space>tn    next tab",
+  "   <Space>tp    previous tab",
+  "   <Space>tx    close tab",
+  "",
   "  Misc",
   "   Ctrl+hjkl    navigate splits/panes (nvim <-> tmux)",
   "   <Space>mp    toggle markdown preview (current buffer)",
@@ -96,6 +102,12 @@ local cheatsheet = {
 vim.keymap.set("n", "<leader>sv", vim.cmd.vsplit, { desc = "Split window vertically" })
 vim.keymap.set("n", "<leader>sh", vim.cmd.split, { desc = "Split window horizontally" })
 vim.keymap.set("n", "<leader>sx", vim.cmd.close, { desc = "Close split" })
+
+-- Native tab pages (pure vim commands, cross-platform).
+vim.keymap.set("n", "<leader>to", vim.cmd.tabnew, { desc = "Open new tab" })
+vim.keymap.set("n", "<leader>tn", vim.cmd.tabnext, { desc = "Next tab" })
+vim.keymap.set("n", "<leader>tp", vim.cmd.tabprevious, { desc = "Previous tab" })
+vim.keymap.set("n", "<leader>tx", vim.cmd.tabclose, { desc = "Close tab" })
 
 vim.keymap.set("n", "<leader>h", function()
   local buf = vim.api.nvim_create_buf(false, true)
