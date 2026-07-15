@@ -2,7 +2,8 @@
   "name": "nvim-conf",
   "private": true,
   "scripts": {
-    "setup": "node setup.js"
+    "setup": "node setup.js",
+    "test": "nvim -l tests/keymaps_spec.lua"
   },
   "repository": {
     "type": "git",
