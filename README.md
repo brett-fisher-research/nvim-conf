@@ -64,7 +64,7 @@ PR review runs on [octo.nvim](https://github.com/pwntester/octo.nvim): everythin
 - [git](https://git-scm.com/) — lazy.nvim clones plugins with it
 - [Node.js](https://nodejs.org/) — only used to run the setup script
 - [GitHub CLI](https://cli.github.com/) - only needed for the PR flow
-- Language servers, optional per language - Python wants [uv](https://docs.astral.sh/uv/): `uv tool install basedpyright && uv tool install ruff`. Nothing breaks when a server is missing; that filetype just gets no diagnostics.
+- Language servers, optional per language - Python wants [uv](https://docs.astral.sh/uv/): `uv tool install basedpyright && uv tool install ruff`. TypeScript/React wants npm: `npm i -g typescript vscode-langservers-extracted`. Nothing breaks when a server is missing; that filetype just gets no diagnostics.
 - Linux only: a clipboard provider — `xclip` or `xsel` on X11, `wl-clipboard` on Wayland. Yanks use the system clipboard (`clipboard=unnamedplus`); Windows and macOS need nothing extra.
 
 ### 2. Clone and run setup
@@ -79,7 +79,9 @@ The setup script is idempotent — run it as many times as you like (e.g. after 
 
 ## Language servers
 
-Diagnostics render as a red undercurl plus a terse inline hint on every offending line, with the full message expanded under the cursor's line only. Python ships configured:
+Diagnostics render as a red undercurl plus a terse inline hint on every offending line, with the full message expanded under the cursor's line only. Inlay hints (parameter names, inferred variable and return types) render for any server that offers them. Two languages ship configured.
+
+### Python
 
 | Server | Owns |
 | --- | --- |
@@ -88,13 +90,42 @@ Diagnostics render as a red undercurl plus a terse inline hint on every offendin
 
 Install both with [uv](https://docs.astral.sh/uv/): `uv tool install basedpyright && uv tool install ruff`.
 
+### TypeScript, JavaScript and React
+
+| Server | Owns |
+| --- | --- |
+| `ts7` ([TypeScript 7](https://www.typescriptlang.org/)) | Types, hover docs, goto-definition, references, completion, auto-import, inlay hints - across `.ts`, `.tsx`, `.js`, `.jsx` |
+| `eslint` ([vscode-langservers-extracted](https://github.com/hrsh7th/vscode-langservers-extracted)) | Lint diagnostics and the `source.fixAll.eslint` action run on save |
+
+Install both with npm: `npm i -g typescript vscode-langservers-extracted`.
+
+Notes on how this is wired:
+
+- TypeScript 7 is the Go rewrite and ships no `tsserver.js` - the compiler binary IS the language server, spoken as `tsc --lsp --stdio`. `typescript-language-server` and `vtsls` cannot drive a TS7 project and are deliberately not used.
+- React needs nothing extra. Neovim 0.12 maps `.tsx` to `typescriptreact` and `.jsx` to `javascriptreact`; JSX diagnostics, component goto-definition, prop completion and component auto-import all come from the same server.
+- Roots resolve at the lockfile first (`package-lock.json`, `bun.lock`, `pnpm-lock.yaml`, `yarn.lock`), then `tsconfig.json`, then `package.json`, then `.git`. One server process serves a whole monorepo; it resolves each package's own `tsconfig.json` internally.
+- eslint's flat config is auto-detected. Formatting is off there - prettier owns it.
+
+### On save
+
+| Filetype | Runs |
+| --- | --- |
+| Python | `source.fixAll.ruff`, then `source.organizeImports.ruff` |
+| JS / TS / JSX / TSX | `source.fixAll.eslint`, then `source.organizeImports`, then prettier |
+
+Prettier has no language server, so it is a plain shell-out to the PROJECT-LOCAL `node_modules/.bin/prettier` with a hard 10s timeout. A project without prettier installed is a silent no-op; global installs are never searched, since an unresolvable binary name hangs the editor.
+
+### Windows binary names
+
+npm writes three shims per global package (a bare extensionless sh script, a `.cmd` and a `.ps1`) and libuv's PATH search picks between them nondeterministically, handing Windows the sh script and failing with ENOENT. So npm-installed servers name the `.cmd` explicitly on win32, via the one helper in `nvim/lua/brot/bin.lua`. uv-installed servers (basedpyright, ruff) are real `.exe` files and keep their bare names on every platform.
+
 ### Adding any language
 
 One file per server, no plugin, no package manager:
 
 1. Install the server binary however that language distributes it (`uv tool install`, `npm i -g`, `brew install`, ...).
 2. Verify Neovim can see it: `:echo exepath("<binary>")` must print a path.
-3. Drop `nvim/lsp/<name>.lua` returning a table with `cmd`, `filetypes`, `root_markers` (copy `nvim/lsp/ruff.lua` as the template). Use the bare binary name in `cmd`; Windows resolves it through PATHEXT.
+3. Drop `nvim/lsp/<name>.lua` returning a table with `cmd`, `filetypes`, `root_markers` (copy `nvim/lsp/ruff.lua` as the template). Use the bare binary name in `cmd`; for an npm-installed server wrap it in `require("brot.bin").npm(...)` so Windows gets the `.cmd` shim.
 4. Add `"<name>"` to the `vim.lsp.enable({ ... })` list in `nvim/init.lua`.
 5. Re-run `npm run setup`, reopen a file of that filetype, confirm with `:checkhealth vim.lsp`.
 
