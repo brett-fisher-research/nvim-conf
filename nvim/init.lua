@@ -60,7 +60,7 @@ vim.api.nvim_create_autocmd("FileType", {
 -- LSP: nvim 0.12's built-in client only. No plugins are involved.
 -- Servers are declared one file per server in nvim/lsp/<name>.lua and turned on
 -- by name here. Adding a language = install its binary + drop one file + list it.
-vim.lsp.enable({ "basedpyright", "ruff" })
+vim.lsp.enable({ "basedpyright", "ruff", "ts7", "eslint" })
 
 -- Diagnostic display: red undercurl (tokyonight already styles the group),
 -- a terse ambient hint on every offending line, and the full multi-line
@@ -108,6 +108,114 @@ vim.api.nvim_create_autocmd("LspAttach", {
     if client:supports_method("textDocument/completion") then
       pcall(vim.lsp.completion.enable, true, client.id, args.buf, { autotrigger = true })
     end
+
+    -- Nvim 0.12 does NOT render inlay hints just because a server offers them;
+    -- they have to be switched on per buffer.
+    if client:supports_method("textDocument/inlayHint") then
+      pcall(vim.lsp.inlay_hint.enable, true, { bufnr = args.buf })
+    end
+  end,
+})
+
+-- Save pipeline. Per-filetype LSP code actions run on BufWritePre, then
+-- prettier (when the project ships one) reformats the buffer.
+local js_kinds = { "source.fixAll.eslint", "source.organizeImports" }
+local save_action_kinds = {
+  python = { "source.fixAll.ruff", "source.organizeImports.ruff" },
+  javascript = js_kinds,
+  javascriptreact = js_kinds,
+  typescript = js_kinds,
+  typescriptreact = js_kinds,
+}
+
+local function whole_buffer_range(bufnr)
+  local last = math.max(vim.api.nvim_buf_line_count(bufnr) - 1, 0)
+  local text = vim.api.nvim_buf_get_lines(bufnr, last, last + 1, false)[1] or ""
+  return { start = { line = 0, character = 0 }, ["end"] = { line = last, character = #text } }
+end
+
+local function run_save_actions(bufnr)
+  local kinds = save_action_kinds[vim.bo[bufnr].filetype]
+  if not kinds then
+    return
+  end
+  for _, kind in ipairs(kinds) do
+    local params = {
+      textDocument = { uri = vim.uri_from_bufnr(bufnr) },
+      range = whole_buffer_range(bufnr),
+      context = { only = { kind }, diagnostics = {}, triggerKind = 2 },
+    }
+    local responses = vim.lsp.buf_request_sync(bufnr, "textDocument/codeAction", params, 3000) or {}
+    for client_id, response in pairs(responses) do
+      local client = vim.lsp.get_client_by_id(client_id)
+      for _, action in ipairs(response.result or {}) do
+        if action.edit then
+          pcall(vim.lsp.util.apply_workspace_edit, action.edit, client and client.offset_encoding or "utf-16")
+        end
+        if action.command and client then
+          local cmd = type(action.command) == "table" and action.command or action
+          pcall(function()
+            client:exec_cmd(cmd, { bufnr = bufnr })
+          end)
+        end
+      end
+    end
+  end
+end
+
+-- Prettier has no language server, so this is the zero-plugin path: shell out
+-- to the PROJECT-LOCAL binary. Global/bare names are deliberately not tried -
+-- an unresolvable bare name hangs the whole editor. No binary = silent no-op,
+-- which is the common case.
+local function prettier_binary(bufnr)
+  local file = vim.api.nvim_buf_get_name(bufnr)
+  if file == "" then
+    return nil
+  end
+  local suffix = vim.fn.has("win32") == 1 and ".cmd" or ""
+  for dir in vim.fs.parents(vim.fn.fnamemodify(file, ":p")) do
+    local candidate = dir .. "/node_modules/.bin/prettier" .. suffix
+    if (vim.uv or vim.loop).fs_stat(candidate) then
+      return candidate
+    end
+  end
+  return nil
+end
+
+local function run_prettier(bufnr)
+  if not save_action_kinds[vim.bo[bufnr].filetype] or vim.bo[bufnr].filetype == "python" then
+    return
+  end
+  local bin = prettier_binary(bufnr)
+  if not bin then
+    return
+  end
+  local input = table.concat(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false), "\n") .. "\n"
+  -- Hard timeout: a hung formatter must never hold the editor hostage.
+  local ok, result = pcall(function()
+    return vim
+      .system({ bin, "--stdin-filepath", vim.api.nvim_buf_get_name(bufnr) }, { stdin = input, text = true })
+      :wait(10000)
+  end)
+  if not ok or type(result) ~= "table" or result.code ~= 0 then
+    return
+  end
+  local out = result.stdout
+  if type(out) ~= "string" or out == "" or out == input then
+    return
+  end
+  local lines = vim.split(out:gsub("\r\n", "\n"):gsub("\n$", ""), "\n", { plain = true })
+  local view = vim.fn.winsaveview()
+  vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+  vim.fn.winrestview(view)
+end
+
+vim.api.nvim_create_autocmd("BufWritePre", {
+  group = lsp_group,
+  desc = "On save: LSP fixAll + organize imports, then project-local prettier",
+  callback = function(args)
+    run_save_actions(args.buf)
+    run_prettier(args.buf)
   end,
 })
 
