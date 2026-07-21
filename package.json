@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "setup": "node setup.js",
-    "test": "nvim -l tests/keymaps_spec.lua"
+    "test": "nvim -l tests/keymaps_spec.lua && nvim -l tests/lsp_spec.lua"
   },
   "repository": {
     "type": "git",
