@@ -28,6 +28,10 @@ end
 local this = debug.getinfo(1, "S").source:sub(2)
 local root = vim.fn.fnamemodify(this, ":p:h:h")
 
+-- The repo's own lua/ modules (brot.bin) come from the repo, not the installed
+-- config, so the specs test what is committed here.
+package.path = root .. "/nvim/lua/?.lua;" .. root .. "/nvim/lua/?/init.lua;" .. package.path
+
 -- Record which server names the config turns on, then let the real call run.
 local enabled = {}
 local orig_enable = vim.lsp.enable
@@ -92,7 +96,28 @@ if #enabled == 0 then
   fail("no servers passed to vim.lsp.enable")
 end
 
-local expected_cmd = { basedpyright = "basedpyright-langserver", ruff = "ruff" }
+local win32 = vim.fn.has("win32") == 1
+local function npm_bin(n)
+  return win32 and (n .. ".cmd") or n
+end
+
+-- uv-installed servers keep bare names (real .exe files); npm-installed ones
+-- must name the .cmd shim on Windows or libuv hands CreateProcess npm's bare
+-- sh script and the spawn dies with ENOENT.
+local expected_cmd = {
+  basedpyright = "basedpyright-langserver",
+  ruff = "ruff",
+  ts7 = npm_bin("tsc"),
+  eslint = npm_bin("vscode-eslint-language-server"),
+}
+local uv_installed = { basedpyright = true, ruff = true }
+local js_filetypes = { "javascript", "javascriptreact", "typescript", "typescriptreact" }
+local expected_filetypes = {
+  basedpyright = { "python" },
+  ruff = { "python" },
+  ts7 = js_filetypes,
+  eslint = js_filetypes,
+}
 
 for _, name in ipairs(enabled) do
   local path = root .. "/nvim/lsp/" .. name .. ".lua"
@@ -109,16 +134,71 @@ for _, name in ipairs(enabled) do
   if expected_cmd[name] and spec.cmd[1] ~= expected_cmd[name] then
     fail(name .. ": cmd[1] is '" .. spec.cmd[1] .. "', expected '" .. expected_cmd[name] .. "'")
   end
-  -- Bare binary names on purpose: PATHEXT resolves them on Windows too.
-  if spec.cmd[1]:match("%.exe$") or spec.cmd[1]:match("%.cmd$") then
-    fail(name .. ": cmd[1] hardcodes a Windows suffix, breaking POSIX hosts")
+  -- uv-installed servers are real executables: bare names on every platform.
+  if uv_installed[name] and (spec.cmd[1]:match("%.exe$") or spec.cmd[1]:match("%.cmd$")) then
+    fail(name .. ": uv-installed server hardcodes a Windows suffix, breaking POSIX hosts")
   end
-  if not vim.deep_equal(spec.filetypes, { "python" }) then
-    fail(name .. ": filetypes is not exactly { 'python' }")
+  if expected_filetypes[name] and not vim.deep_equal(spec.filetypes, expected_filetypes[name]) then
+    fail(name .. ": filetypes is " .. vim.inspect(spec.filetypes) .. ", expected " .. vim.inspect(expected_filetypes[name]))
   end
   if type(spec.root_markers) ~= "table" or #spec.root_markers == 0 then
     fail(name .. ": root_markers is empty")
   end
+end
+
+--------------------------------------------------------------------------
+-- The npm binary helper is the single place the Windows shim gotcha lives.
+--------------------------------------------------------------------------
+local brot_bin = require("brot.bin")
+if brot_bin.npm("tsc") ~= (win32 and "tsc.cmd" or "tsc") then
+  fail("brot.bin.npm returned '" .. brot_bin.npm("tsc") .. "' on this platform")
+end
+for _, name in ipairs({ "basedpyright", "ruff" }) do
+  local spec = dofile(root .. "/nvim/lsp/" .. name .. ".lua")
+  if spec.cmd[1] ~= expected_cmd[name] then
+    fail(name .. ": uv-installed server must keep its bare name, got '" .. spec.cmd[1] .. "'")
+  end
+end
+
+--------------------------------------------------------------------------
+-- ts7: TS7's compiler IS the language server, and roots at the lockfile tier.
+--------------------------------------------------------------------------
+local ts7 = dofile(root .. "/nvim/lsp/ts7.lua")
+if not vim.deep_equal({ ts7.cmd[2], ts7.cmd[3] }, { "--lsp", "--stdio" }) then
+  fail("ts7: cmd does not end in --lsp --stdio, got " .. vim.inspect(ts7.cmd))
+end
+local tier = ts7.root_markers[1]
+if type(tier) ~= "table" then
+  fail("ts7: root_markers[1] is not a priority tier table")
+end
+for _, lockfile in ipairs({ "package-lock.json", "bun.lock" }) do
+  if not vim.tbl_contains(tier, lockfile) then
+    fail("ts7: top root-marker tier is missing " .. lockfile)
+  end
+end
+for _, lockfile in ipairs(tier) do
+  if lockfile:match("^tsconfig") or lockfile:match("^jsconfig") then
+    fail("ts7: tsconfig sits in the top tier; a monorepo would root per-app")
+  end
+end
+
+--------------------------------------------------------------------------
+-- eslint: before_init fills in the workspaceFolder the server demands.
+--------------------------------------------------------------------------
+local eslint = dofile(root .. "/nvim/lsp/eslint.lua")
+if type(eslint.before_init) ~= "function" then
+  fail("eslint: no before_init hook; the server throws on its first diagnostic request")
+end
+if eslint.settings.format ~= false then
+  fail("eslint: formatting is not disabled; it would fight prettier")
+end
+local eslint_config = { root_dir = "/home/user/code/web-app" }
+eslint.before_init({}, eslint_config)
+if eslint_config.settings.workspaceFolder.uri ~= "/home/user/code/web-app" then
+  fail("eslint: before_init did not set settings.workspaceFolder.uri to root_dir")
+end
+if eslint_config.settings.workspaceFolder.name ~= "web-app" then
+  fail("eslint: workspaceFolder.name is '" .. tostring(eslint_config.settings.workspaceFolder.name) .. "', expected the root basename")
 end
 
 --------------------------------------------------------------------------
@@ -176,6 +256,24 @@ if completion_enabled_for[pyright.id] ~= true then
 end
 if completion_enabled_for[ruff.id] ~= nil then
   fail("LspAttach enabled completion for a server that does not advertise it")
+end
+
+--------------------------------------------------------------------------
+-- Inlay hints: nvim renders them only when explicitly enabled per buffer, so
+-- a server that advertises them must leave its buffer with hints on.
+--------------------------------------------------------------------------
+local hinting = fake_client(3, "ts7", { ["textDocument/inlayHint"] = true })
+local hint_buf = vim.api.nvim_create_buf(false, true)
+attach({ buf = hint_buf, data = { client_id = hinting.id } })
+if vim.lsp.inlay_hint.is_enabled({ bufnr = hint_buf }) ~= true then
+  fail("LspAttach did not enable inlay hints for a server that advertises them")
+end
+
+local blind = fake_client(4, "ruff", { ["textDocument/inlayHint"] = false })
+local blind_buf = vim.api.nvim_create_buf(false, true)
+attach({ buf = blind_buf, data = { client_id = blind.id } })
+if vim.lsp.inlay_hint.is_enabled({ bufnr = blind_buf }) ~= false then
+  fail("LspAttach enabled inlay hints for a server that does not advertise them")
 end
 
 -- An attach event for an already-gone client must not error.
