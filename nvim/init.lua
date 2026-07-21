@@ -57,6 +57,60 @@ vim.api.nvim_create_autocmd("FileType", {
   end,
 })
 
+-- LSP: nvim 0.12's built-in client only. No plugins are involved.
+-- Servers are declared one file per server in nvim/lsp/<name>.lua and turned on
+-- by name here. Adding a language = install its binary + drop one file + list it.
+vim.lsp.enable({ "basedpyright", "ruff" })
+
+-- Diagnostic display: red undercurl (tokyonight already styles the group),
+-- a terse ambient hint on every offending line, and the full multi-line
+-- message expanded under the cursor's line only.
+vim.diagnostic.config({
+  severity_sort = true,
+  underline = true,
+  update_in_insert = false,
+  virtual_text = { spacing = 2, prefix = "●" },
+  virtual_lines = { current_line = true },
+  signs = {
+    text = {
+      [vim.diagnostic.severity.ERROR] = "E",
+      [vim.diagnostic.severity.WARN] = "W",
+      [vim.diagnostic.severity.INFO] = "I",
+      [vim.diagnostic.severity.HINT] = "H",
+    },
+  },
+  float = { border = "rounded", source = true },
+})
+
+-- Nvim 0.12 already maps grr/grn/gra/gri/grt/grx/gO/K/<C-]>/]d/[d/<C-w>d.
+-- Only the two muscle-memory keys it leaves free are added here.
+vim.keymap.set("n", "gd", vim.lsp.buf.definition, { desc = "LSP: go to definition" })
+vim.keymap.set("n", "gR", vim.lsp.buf.references, { desc = "LSP: list references" })
+
+local lsp_group = vim.api.nvim_create_augroup("BrotLspAttach", { clear = true })
+vim.api.nvim_create_autocmd("LspAttach", {
+  group = lsp_group,
+  desc = "Per-client LSP setup: completion autotrigger, single hover provider",
+  callback = function(args)
+    local client = vim.lsp.get_client_by_id(args.data.client_id)
+    if not client then
+      return
+    end
+
+    -- ruff's hover is a lint-rule blurb; basedpyright's is the real docs, so
+    -- ruff stops advertising hover and K always reaches basedpyright.
+    if client.name == "ruff" then
+      client.server_capabilities.hoverProvider = false
+    end
+
+    -- Built-in completion (<C-x><C-o> plus autotrigger) for any server that
+    -- offers it, with no completion plugin involved.
+    if client:supports_method("textDocument/completion") then
+      pcall(vim.lsp.completion.enable, true, client.id, args.buf, { autotrigger = true })
+    end
+  end,
+})
+
 -- <leader>h — floating cheatsheet of this config's commands.
 local cheatsheet = {
   "  Files",
@@ -72,6 +126,15 @@ local cheatsheet = {
   "   <Space>po    open PR by number",
   "   <Space>pc    PR checks (CI)",
   "   <Space>pb    open PR in browser",
+  "",
+  "  Code (LSP)",
+  "   gd           go to definition",
+  "   gR           list references",
+  "   K            hover docs",
+  "   grn          rename symbol",
+  "   gra          code action",
+  "   ]d  [d       next / previous diagnostic",
+  "   Ctrl+w d     diagnostic in a float",
   "",
   "  Git",
   "   <Space>gb    branches (Enter checks out)",
