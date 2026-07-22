@@ -335,6 +335,9 @@ local function lhs_forms(token)
   if token == "Ctrl+hjkl" then
     return { "<C-h>", "<C-j>", "<C-k>", "<C-l>" }
   end
+  if token == "Esc" then
+    return { "<Esc>" }
+  end
   local ctrl = token:match("^Ctrl%+(%a)$")
   if ctrl then
     return { "<C-" .. ctrl .. ">" }

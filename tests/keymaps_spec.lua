@@ -78,5 +78,26 @@ if vim.fn.tabpagenr("$") ~= n - 1 then
   fail("<leader>tx did not close the tab")
 end
 
-io.stdout:write("PASS: tab keymaps (to/tn/tp/tx) load and drive tab pages\n")
+-- <Esc> in normal mode clears the search highlight. The rhs is a string
+-- (`<cmd>nohlsearch<CR><Esc>`), not a callback: assert the mapping exists and
+-- that feeding Esc through it turns v:hlsearch off.
+local esc = vim.fn.maparg("<Esc>", "n", false, true)
+if type(esc) ~= "table" or vim.tbl_isempty(esc) then
+  fail("no normal-mode mapping for '<Esc>'")
+end
+if type(esc.rhs) ~= "string" or not esc.rhs:lower():match("nohlsearch") then
+  fail("'<Esc>' mapping rhs does not invoke nohlsearch")
+end
+vim.opt.hlsearch = true
+vim.fn.setreg("/", "needle")
+vim.cmd("let v:hlsearch = 1")
+if vim.v.hlsearch ~= 1 then
+  fail("could not arm v:hlsearch for the <Esc> test")
+end
+vim.api.nvim_feedkeys(vim.api.nvim_replace_termcodes("<Esc>", true, false, true), "mx", false)
+if vim.v.hlsearch ~= 0 then
+  fail("<Esc> did not clear the search highlight (v:hlsearch still 1)")
+end
+
+io.stdout:write("PASS: tab keymaps (to/tn/tp/tx) drive tab pages; <Esc> clears search highlight\n")
 os.exit(0)
