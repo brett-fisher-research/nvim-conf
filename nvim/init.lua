@@ -22,6 +22,10 @@ vim.opt.splitright = true
 vim.opt.splitbelow = true
 vim.opt.swapfile = false
 vim.opt.clipboard = "unnamedplus"
+-- Completion menu behavior: show the popup (menuone lets it appear for a lone
+-- match) but never auto-insert or auto-select - the first item stays unpicked
+-- until the user chooses, so typing through a trigger char inserts nothing.
+vim.opt.completeopt = { "menu", "menuone", "noinsert", "noselect", "popup" }
 
 -- Bootstrap lazy.nvim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"

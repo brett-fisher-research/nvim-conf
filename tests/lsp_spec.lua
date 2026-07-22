@@ -259,6 +259,18 @@ if completion_enabled_for[ruff.id] ~= nil then
 end
 
 --------------------------------------------------------------------------
+-- completeopt keeps the popup from auto-filling: noinsert stops the first
+-- match being inserted, noselect stops it being pre-highlighted, so typing
+-- through a trigger char inserts nothing until the user picks.
+--------------------------------------------------------------------------
+local completeopt = vim.opt.completeopt:get()
+for _, want in ipairs({ "noinsert", "noselect" }) do
+  if not vim.tbl_contains(completeopt, want) then
+    fail("completeopt is missing '" .. want .. "'; the completion popup would auto-fill the first match")
+  end
+end
+
+--------------------------------------------------------------------------
 -- Inlay hints: the user dislikes the type ghosts, so LspAttach leaves nvim's
 -- default (hints off) alone even when a server advertises them.
 --------------------------------------------------------------------------
