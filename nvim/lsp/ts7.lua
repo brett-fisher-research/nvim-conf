@@ -34,9 +34,9 @@ return {
     ".git",
   },
 
-  -- Inlay hints are requested here and switched on per buffer by the LspAttach
-  -- handler in init.lua (nvim does not render them just because a server offers
-  -- them). TS7 reads the VS Code-shaped keys below, NOT tsserver's legacy
+  -- Inlay hints are requested here so `:lua vim.lsp.inlay_hint.enable(true)`
+  -- works on demand, but nothing switches them on - nvim's default (off)
+  -- stands. TS7 reads the VS Code-shaped keys below, NOT tsserver's legacy
   -- `includeInlay*` preference names - those are silently ignored and no hints
   -- ever arrive.
   settings = {

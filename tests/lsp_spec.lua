@@ -259,21 +259,14 @@ if completion_enabled_for[ruff.id] ~= nil then
 end
 
 --------------------------------------------------------------------------
--- Inlay hints: nvim renders them only when explicitly enabled per buffer, so
--- a server that advertises them must leave its buffer with hints on.
+-- Inlay hints: the user dislikes the type ghosts, so LspAttach leaves nvim's
+-- default (hints off) alone even when a server advertises them.
 --------------------------------------------------------------------------
 local hinting = fake_client(3, "ts7", { ["textDocument/inlayHint"] = true })
 local hint_buf = vim.api.nvim_create_buf(false, true)
 attach({ buf = hint_buf, data = { client_id = hinting.id } })
-if vim.lsp.inlay_hint.is_enabled({ bufnr = hint_buf }) ~= true then
-  fail("LspAttach did not enable inlay hints for a server that advertises them")
-end
-
-local blind = fake_client(4, "ruff", { ["textDocument/inlayHint"] = false })
-local blind_buf = vim.api.nvim_create_buf(false, true)
-attach({ buf = blind_buf, data = { client_id = blind.id } })
-if vim.lsp.inlay_hint.is_enabled({ bufnr = blind_buf }) ~= false then
-  fail("LspAttach enabled inlay hints for a server that does not advertise them")
+if vim.lsp.inlay_hint.is_enabled({ bufnr = hint_buf }) ~= false then
+  fail("LspAttach enabled inlay hints for a server that advertises them; they should stay off")
 end
 
 -- An attach event for an already-gone client must not error.

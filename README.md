@@ -79,7 +79,7 @@ The setup script is idempotent — run it as many times as you like (e.g. after 
 
 ## Language servers
 
-Diagnostics render as a red undercurl plus a terse inline hint on every offending line, with the full message expanded under the cursor's line only. Inlay hints (parameter names, inferred variable and return types) render for any server that offers them. Two languages ship configured.
+Diagnostics render as a red undercurl plus a terse inline hint on every offending line, with the full message expanded under the cursor's line only. Inlay hints stay off (nvim's default) - the inferred-type ghost text is unwanted. Two languages ship configured.
 
 ### Python
 
@@ -94,7 +94,7 @@ Install both with [uv](https://docs.astral.sh/uv/): `uv tool install basedpyrigh
 
 | Server | Owns |
 | --- | --- |
-| `ts7` ([TypeScript 7](https://www.typescriptlang.org/)) | Types, hover docs, goto-definition, references, completion, auto-import, inlay hints - across `.ts`, `.tsx`, `.js`, `.jsx` |
+| `ts7` ([TypeScript 7](https://www.typescriptlang.org/)) | Types, hover docs, goto-definition, references, completion, auto-import - across `.ts`, `.tsx`, `.js`, `.jsx` |
 | `eslint` ([vscode-langservers-extracted](https://github.com/hrsh7th/vscode-langservers-extracted)) | Lint diagnostics and the `source.fixAll.eslint` action run on save |
 
 Install both with npm: `npm i -g typescript vscode-langservers-extracted`.

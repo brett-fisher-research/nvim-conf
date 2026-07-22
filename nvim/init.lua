@@ -108,12 +108,6 @@ vim.api.nvim_create_autocmd("LspAttach", {
     if client:supports_method("textDocument/completion") then
       pcall(vim.lsp.completion.enable, true, client.id, args.buf, { autotrigger = true })
     end
-
-    -- Nvim 0.12 does NOT render inlay hints just because a server offers them;
-    -- they have to be switched on per buffer.
-    if client:supports_method("textDocument/inlayHint") then
-      pcall(vim.lsp.inlay_hint.enable, true, { bufnr = args.buf })
-    end
   end,
 })
 
