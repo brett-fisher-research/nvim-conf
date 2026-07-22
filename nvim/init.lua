@@ -265,6 +265,7 @@ local cheatsheet = {
   "",
   "  Misc",
   "   Ctrl+hjkl    navigate splits/panes (nvim <-> tmux)",
+  "   Esc          also clears search highlight",
   "   <Space>mp    toggle markdown preview (current buffer)",
   "   <Space>h     this cheatsheet (q or Esc closes)",
   "   :Lazy update update plugins (never automatic)",
@@ -279,6 +280,10 @@ vim.keymap.set("n", "<leader>to", vim.cmd.tabnew, { desc = "Open new tab" })
 vim.keymap.set("n", "<leader>tn", vim.cmd.tabnext, { desc = "Next tab" })
 vim.keymap.set("n", "<leader>tp", vim.cmd.tabprevious, { desc = "Previous tab" })
 vim.keymap.set("n", "<leader>tx", vim.cmd.tabclose, { desc = "Close tab" })
+
+-- Esc in normal mode also clears the current search highlight, then falls
+-- through to its normal behavior.
+vim.keymap.set("n", "<Esc>", "<cmd>nohlsearch<CR><Esc>", { desc = "Clear search highlight" })
 
 vim.keymap.set("n", "<leader>h", function()
   local buf = vim.api.nvim_create_buf(false, true)
